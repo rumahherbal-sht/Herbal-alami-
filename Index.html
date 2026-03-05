@@ -36,6 +36,7 @@
             display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
         }
         .status-pending { background: #fef3c7; color: #92400e; }
+        .status-menunggu-pembayaran { background: #fff3cd; color: #856404; }
         .status-proses { background: #dbeafe; color: #1e40af; }
         .status-dikirim { background: #f3e8ff; color: #6b21a8; }
         .status-selesai { background: #d1fae5; color: #065f46; }
@@ -48,6 +49,15 @@
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
         .tab-active { border-bottom: 2px solid #16a34a; color: #16a34a; font-weight: 600; }
+        .copy-btn { cursor: pointer; transition: all 0.2s; }
+        .copy-btn:hover { transform: scale(1.1); }
+        .rekening-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -230,6 +240,83 @@
         </div>
     </div>
 
+    <!-- MODAL KONFIRMASI PEMBAYARAN ADMIN -->
+    <div id="konfirmasiModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">💰 Konfirmasi Pembayaran</h3>
+                <button onclick="tutupKonfirmasiModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div id="konfirmasiInfo" class="mb-4 p-3 bg-blue-50 rounded-lg"></div>
+            
+            <div class="rekening-card mb-4">
+                <p class="font-bold text-lg mb-2">🏦 Rekening Tujuan</p>
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-sm opacity-90">Bank BCA</p>
+                        <p class="font-mono text-lg">1234567890</p>
+                        <p class="text-sm">a.n. Jamu Herbal Alami</p>
+                    </div>
+                    <button onclick="copyRekening()" class="bg-white text-purple-700 px-3 py-2 rounded-lg copy-btn">
+                        <i class="fas fa-copy mr-1"></i>Copy
+                    </button>
+                </div>
+            </div>
+            
+            <form id="konfirmasiForm" onsubmit="prosesKonfirmasi(event)">
+                <input type="hidden" id="konfirmasiOrderId">
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">ID Pembeli (yang ditransfer)</label>
+                    <input type="text" id="idPembeli" required class="w-full border rounded-lg p-2" placeholder="Masukkan ID pembeli/order">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Jumlah Transfer (Rp)</label>
+                    <input type="number" id="jumlahTransfer" required min="0" class="w-full border rounded-lg p-2">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Bank Asal</label>
+                    <select id="bankAsal" required class="w-full border rounded-lg p-2">
+                        <option value="">Pilih Bank</option>
+                        <option value="BCA">BCA</option>
+                        <option value="BNI">BNI</option>
+                        <option value="BRI">BRI</option>
+                        <option value="Mandiri">Mandiri</option>
+                        <option value="Bank Lain">Bank Lain</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Nama Pengirim</label>
+                    <input type="text" id="namaPengirim" required class="w-full border rounded-lg p-2">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Tanggal Transfer</label>
+                    <input type="date" id="tanggalTransfer" required class="w-full border rounded-lg p-2">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Bukti Transfer (opsional)</label>
+                    <input type="file" id="buktiTransfer" accept="image/*" class="w-full">
+                </div>
+                
+                <div class="flex gap-2">
+                    <button type="button" onclick="tutupKonfirmasiModal()" class="flex-1 bg-gray-300 py-2 rounded-lg">Batal</button>
+                    <button type="submit" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">
+                        <i class="fas fa-check mr-2"></i>Konfirmasi & Proses
+                    </button>
+                </div>
+            </form>
+            
+            <p class="text-xs text-gray-500 mt-3 text-center">
+                *Pesanan akan masuk ke status "Diproses" setelah dikonfirmasi
+            </p>
+        </div>
+    </div>
+
     <!-- ADMIN LOGIN MODAL -->
     <div id="adminLoginModal" class="modal">
         <div class="modal-content">
@@ -278,16 +365,20 @@
             
             <!-- TAB PESANAN -->
             <div id="tabPesanan" class="tab-content hidden">
-                <div class="mb-4 flex gap-2">
+                <div class="mb-4 flex flex-wrap gap-2">
                     <select id="filterStatus" class="border rounded-lg p-2" onchange="filterPesanan()">
                         <option value="all">Semua Status</option>
                         <option value="pending">⏳ Pending</option>
+                        <option value="menunggu-pembayaran">💰 Menunggu Pembayaran</option>
                         <option value="proses">⚙️ Diproses</option>
                         <option value="dikirim">📦 Dikirim</option>
                         <option value="selesai">✅ Selesai</option>
                         <option value="ditolak">❌ Ditolak</option>
                     </select>
                     <input type="text" id="searchPesanan" placeholder="Cari nama/ID..." class="border rounded-lg p-2 flex-1" onkeyup="filterPesanan()">
+                    <button onclick="bukaKonfirmasiModalFromAdmin()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-money-bill-wave mr-2"></i>Konfirmasi Pembayaran
+                    </button>
                 </div>
                 <div id="adminPesananList" class="space-y-3 max-h-96 overflow-y-auto"></div>
             </div>
@@ -382,6 +473,11 @@
             toast.className = `toast ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
             toast.classList.remove('hidden');
             setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        function copyRekening() {
+            navigator.clipboard.writeText('1234567890 a.n. Jamu Herbal Alami (BCA)');
+            showToast('Rekening berhasil dicopy!');
         }
 
         // ========== HIDDEN CLICK ==========
@@ -572,7 +668,7 @@
                 // Generate kode unik
                 const kodePesanan = 'INV-' + Date.now().toString().slice(-8) + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
                 
-                // Simpan pesanan
+                // Simpan pesanan dengan status MENUNGGU PEMBAYARAN (bukan pending langsung)
                 db.ref('pesanan').push({
                     kode: kodePesanan,
                     produkId: produkId,
@@ -583,16 +679,21 @@
                     alamat: alamat,
                     jumlah: qty,
                     total: harga * qty,
-                    status: 'pending',
+                    status: 'menunggu-pembayaran', // LANGSUNG MENUNGGU PEMBAYARAN
                     waktu: Date.now(),
                     session: session,
-                    dapatUlasan: false
+                    dapatUlasan: false,
+                    riwayatStatus: [{
+                        status: 'menunggu-pembayaran',
+                        waktu: Date.now(),
+                        catatan: 'Pesanan dibuat, menunggu konfirmasi pembayaran'
+                    }]
                 }).then(() => {
                     showToast(`✅ Pesanan berhasil! ID: ${kodePesanan}`, 'success');
                     tutupOrderModal();
                     
-                    // Format pesan WA yang bener dengan nama produk
-                    const pesanWA = `🆕 *PESANAN BARU!*\n\n` +
+                    // Format pesan WA yang bener dengan instruksi pembayaran
+                    const pesanWA = `🆕 *PESANAN BARU - MENUNGGU PEMBAYARAN!*\n\n` +
                         `*ID Pesanan:* ${kodePesanan}\n` +
                         `*Nama:* ${nama}\n` +
                         `*No. WA:* ${wa}\n` +
@@ -602,8 +703,13 @@
                         `🔢 Jumlah: ${qty} pcs\n` +
                         `💰 Harga: Rp ${harga.toLocaleString()}\n` +
                         `💵 Total: Rp ${(harga * qty).toLocaleString()}\n\n` +
-                        `⏳ Status: PENDING\n\n` +
-                        `_Silakan cek di panel admin untuk konfirmasi._`;
+                        `⏳ Status: MENUNGGU PEMBAYARAN\n\n` +
+                        `_Silakan transfer ke rekening BCA 1234567890 a.n. Jamu Herbal Alami_\n` +
+                        `_Konfirmasi pembayaran melalui WA ini dengan mengirim bukti transfer_\n\n` +
+                        `📱 *Cara Konfirmasi:*\n` +
+                        `1. Transfer sesuai total\n` +
+                        `2. Screenshot bukti transfer\n` +
+                        `3. Kirim ke nomor ini dengan menyertakan ID Pesanan`;
                     
                     window.open(`https://wa.me/${OWNER_WA}?text=${encodeURIComponent(pesanWA)}`, '_blank');
                     
@@ -646,6 +752,7 @@
                 
                 const statusClass = {
                     'pending': 'status-pending',
+                    'menunggu-pembayaran': 'status-menunggu-pembayaran',
                     'proses': 'status-proses',
                     'dikirim': 'status-dikirim',
                     'selesai': 'status-selesai',
@@ -653,12 +760,28 @@
                 }[order.status] || 'status-pending';
                 
                 const statusText = {
-                    'pending': '⏳ Menunggu Konfirmasi',
+                    'pending': '⏳ Pending (Menunggu Admin)',
+                    'menunggu-pembayaran': '💰 Menunggu Pembayaran',
                     'proses': '⚙️ Sedang Diproses',
                     'dikirim': '📦 Dalam Pengiriman',
                     'selesai': '✅ Pesanan Selesai',
                     'ditolak': '❌ Pesanan Ditolak'
                 }[order.status] || '⏳ ' + order.status;
+                
+                // Tampilkan info rekening kalau status menunggu pembayaran
+                let paymentInfo = '';
+                if(order.status === 'menunggu-pembayaran') {
+                    paymentInfo = `
+                        <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+                            <p class="font-semibold text-blue-800 mb-2">🏦 INSTRUKSI PEMBAYARAN</p>
+                            <p class="text-sm">Transfer ke rekening:</p>
+                            <p class="font-mono font-bold">BCA 1234567890</p>
+                            <p class="text-sm">a.n. Jamu Herbal Alami</p>
+                            <p class="text-sm mt-2">Total: <span class="font-bold">Rp ${order.total.toLocaleString()}</span></p>
+                            <p class="text-xs text-gray-600 mt-2">*Konfirmasi via WhatsApp setelah transfer</p>
+                        </div>
+                    `;
+                }
                 
                 let reviewButton = '';
                 if(order.status === 'selesai' && !order.dapatUlasan) {
@@ -702,6 +825,7 @@
                             <p class="text-sm font-bold text-green-600 mt-1">Total: Rp ${order.total.toLocaleString()}</p>
                         </div>
                         
+                        ${paymentInfo}
                         ${reviewButton}
                         
                         <p class="text-xs text-gray-400 mt-3">
@@ -819,6 +943,134 @@
                 tutupReviewModal();
             }).catch(error => {
                 showToast('Gagal menyimpan ulasan: ' + error.message, 'error');
+            });
+        }
+
+        // ========== MODAL KONFIRMASI PEMBAYARAN ==========
+        function bukaKonfirmasiModal(orderId = null, kodePesanan = null, total = null) {
+            if(orderId) {
+                document.getElementById('konfirmasiOrderId').value = orderId;
+                document.getElementById('konfirmasiInfo').innerHTML = `
+                    <p class="font-semibold">Konfirmasi Pembayaran</p>
+                    <p class="text-sm">ID Pesanan: <span class="font-mono">${kodePesanan}</span></p>
+                    <p class="text-sm">Total: <span class="font-bold">Rp ${total.toLocaleString()}</span></p>
+                `;
+                document.getElementById('jumlahTransfer').value = total;
+            } else {
+                document.getElementById('konfirmasiInfo').innerHTML = `
+                    <p class="font-semibold">Konfirmasi Pembayaran</p>
+                    <p class="text-sm text-gray-600">Masukkan ID pembeli/pesanan yang sudah transfer</p>
+                `;
+                document.getElementById('jumlahTransfer').value = '';
+            }
+            
+            // Set default date ke hari ini
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('tanggalTransfer').value = today;
+            
+            document.getElementById('konfirmasiModal').style.display = 'flex';
+        }
+
+        function bukaKonfirmasiModalFromAdmin() {
+            bukaKonfirmasiModal();
+        }
+
+        function tutupKonfirmasiModal() {
+            document.getElementById('konfirmasiModal').style.display = 'none';
+            document.getElementById('konfirmasiForm').reset();
+        }
+
+        function prosesKonfirmasi(event) {
+            event.preventDefault();
+            
+            const idPembeli = document.getElementById('idPembeli').value.trim();
+            const jumlahTransfer = parseInt(document.getElementById('jumlahTransfer').value);
+            const bankAsal = document.getElementById('bankAsal').value;
+            const namaPengirim = document.getElementById('namaPengirim').value.trim();
+            const tanggalTransfer = document.getElementById('tanggalTransfer').value;
+            const buktiFile = document.getElementById('buktiTransfer').files[0];
+            
+            if(!idPembeli) {
+                showToast('Masukkan ID pembeli/pesanan!', 'error');
+                return;
+            }
+            
+            // Cari pesanan berdasarkan ID atau kode
+            db.ref('pesanan').orderByChild('kode').equalTo(idPembeli).once('value', (snapshot) => {
+                const data = snapshot.val();
+                
+                if(!data) {
+                    showToast('ID Pesanan tidak ditemukan!', 'error');
+                    return;
+                }
+                
+                const orderId = Object.keys(data)[0];
+                const order = data[orderId];
+                
+                // Validasi jumlah transfer
+                if(jumlahTransfer !== order.total) {
+                    showToast(`Jumlah transfer tidak sesuai! Seharusnya Rp ${order.total.toLocaleString()}`, 'error');
+                    return;
+                }
+                
+                // Data konfirmasi
+                const konfirmasiData = {
+                    idPembeli: idPembeli,
+                    jumlahTransfer: jumlahTransfer,
+                    bankAsal: bankAsal,
+                    namaPengirim: namaPengirim,
+                    tanggalTransfer: tanggalTransfer,
+                    waktuKonfirmasi: Date.now(),
+                    dikonfirmasiOleh: 'Admin'
+                };
+                
+                if(buktiFile) {
+                    // Upload bukti transfer
+                    const storageRef = storage.ref('bukti-transfer/' + Date.now() + '_' + buktiFile.name);
+                    storageRef.put(buktiFile).then(snapshot => {
+                        return snapshot.ref.getDownloadURL();
+                    }).then(downloadURL => {
+                        konfirmasiData.buktiURL = downloadURL;
+                        return updatePesananSetelahKonfirmasi(orderId, konfirmasiData, order);
+                    }).catch(error => {
+                        showToast('Gagal upload bukti: ' + error.message, 'error');
+                    });
+                } else {
+                    updatePesananSetelahKonfirmasi(orderId, konfirmasiData, order);
+                }
+            });
+        }
+
+        function updatePesananSetelahKonfirmasi(orderId, konfirmasiData, order) {
+            // Update status pesanan jadi PROSES
+            const riwayatBaru = order.riwayatStatus || [];
+            riwayatBaru.push({
+                status: 'proses',
+                waktu: Date.now(),
+                catatan: `Pembayaran dikonfirmasi - Transfer dari ${konfirmasiData.namaPengirim} (${konfirmasiData.bankAsal}) Rp ${konfirmasiData.jumlahTransfer.toLocaleString()}`
+            });
+            
+            return db.ref('pesanan/' + orderId).update({
+                status: 'proses',
+                riwayatStatus: riwayatBaru,
+                konfirmasiPembayaran: konfirmasiData,
+                waktuKonfirmasi: Date.now()
+            }).then(() => {
+                showToast('✅ Pembayaran dikonfirmasi! Pesanan sekarang DIPROSES', 'success');
+                tutupKonfirmasiModal();
+                
+                // Kirim notifikasi WA ke pembeli
+                const pesanWA = `✅ *PEMBAYARAN DIKONFIRMASI!*\n\n` +
+                    `Halo ${order.nama},\n` +
+                    `Pembayaran untuk pesanan *${order.kode}* sudah kami terima dan konfirmasi.\n\n` +
+                    `📦 *Status Terbaru:* DIPROSES\n` +
+                    `Kami akan segera memproses pesanan Anda.\n\n` +
+                    `Terima kasih telah berbelanja di Jamu Herbal Alami 🌿`;
+                
+                window.open(`https://wa.me/${order.wa.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(pesanWA)}`, '_blank');
+                
+                // Refresh data
+                loadAdminPesanan();
             });
         }
 
@@ -964,6 +1216,7 @@
             filtered.forEach(order => {
                 const statusClass = {
                     'pending': 'status-pending',
+                    'menunggu-pembayaran': 'status-menunggu-pembayaran',
                     'proses': 'status-proses',
                     'dikirim': 'status-dikirim',
                     'selesai': 'status-selesai',
@@ -972,15 +1225,23 @@
                 
                 const statusText = {
                     'pending': '⏳ Pending',
+                    'menunggu-pembayaran': '💰 Menunggu Pembayaran',
                     'proses': '⚙️ Diproses',
                     'dikirim': '📦 Dikirim',
                     'selesai': '✅ Selesai',
                     'ditolak': '❌ Ditolak'
                 }[order.status] || order.status;
                 
+                // Tombol konfirmasi khusus untuk status menunggu-pembayaran
+                const confirmButton = order.status === 'menunggu-pembayaran' ? 
+                    `<button onclick="bukaKonfirmasiModal('${order.id}', '${order.kode}', ${order.total})" class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 mr-2">
+                        <i class="fas fa-check mr-1"></i>Konfirmasi
+                    </button>` : '';
+                
                 html += `
                     <div class="bg-white p-4 rounded-lg shadow order-card" style="border-left-color: ${
                         order.status === 'pending' ? '#f59e0b' : 
+                        order.status === 'menunggu-pembayaran' ? '#f59e0b' :
                         order.status === 'proses' ? '#3b82f6' : 
                         order.status === 'dikirim' ? '#8b5cf6' : 
                         order.status === 'selesai' ? '#10b981' : '#ef4444'
@@ -996,9 +1257,11 @@
                         <p class="text-sm mb-1">${order.produkNama} x ${order.jumlah}</p>
                         <p class="text-sm font-bold text-green-600 mb-2">Rp ${order.total.toLocaleString()}</p>
                         
-                        <div class="flex gap-2 mt-2">
+                        <div class="flex gap-2 mt-2 items-center">
+                            ${confirmButton}
+                            
                             <select onchange="ubahStatusPesanan('${order.id}', this.value)" class="text-sm border rounded p-1">
-                                <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
+                                <option value="menunggu-pembayaran" ${order.status === 'menunggu-pembayaran' ? 'selected' : ''}>Menunggu Bayar</option>
                                 <option value="proses" ${order.status === 'proses' ? 'selected' : ''}>Diproses</option>
                                 <option value="dikirim" ${order.status === 'dikirim' ? 'selected' : ''}>Dikirim</option>
                                 <option value="selesai" ${order.status === 'selesai' ? 'selected' : ''}>Selesai</option>
@@ -1021,16 +1284,29 @@
         }
 
         function ubahStatusPesanan(id, status) {
-            db.ref('pesanan/' + id).update({ status: status }).then(() => {
-                showToast(`Status pesanan diubah ke ${status}`);
+            db.ref('pesanan/' + id).once('value', snap => {
+                const order = snap.val();
+                const riwayatBaru = order.riwayatStatus || [];
+                riwayatBaru.push({
+                    status: status,
+                    waktu: Date.now(),
+                    catatan: `Status diubah dari ${order.status} ke ${status} oleh Admin`
+                });
                 
-                // Kalau status selesai, tambah jumlah terjual
-                if(status === 'selesai') {
-                    db.ref('pesanan/' + id).once('value', snap => {
-                        const order = snap.val();
-                        db.ref('produk/' + order.produkId + '/terjual').transaction(current => (current || 0) + order.jumlah);
-                    });
-                }
+                db.ref('pesanan/' + id).update({ 
+                    status: status,
+                    riwayatStatus: riwayatBaru
+                }).then(() => {
+                    showToast(`Status pesanan diubah ke ${status}`);
+                    
+                    // Kalau status selesai, tambah jumlah terjual
+                    if(status === 'selesai') {
+                        db.ref('pesanan/' + id).once('value', snap => {
+                            const order = snap.val();
+                            db.ref('produk/' + order.produkId + '/terjual').transaction(current => (current || 0) + order.jumlah);
+                        });
+                    }
+                });
             });
         }
 
@@ -1077,7 +1353,7 @@
             });
         }
 
-        function hapusTestimoni(id) {
+                function hapusTestimoni(id) {
             if(confirm('Yakin mau hapus testimoni ini?')) {
                 db.ref('testimoni/' + id).remove().then(() => {
                     showToast('Testimoni dihapus');
@@ -1180,6 +1456,101 @@
             });
         }
 
+        // ========== FITUR SELESAIKAN PESANAN ==========
+        function selesaikanPesanan(id) {
+            if(confirm('Tandai pesanan ini sebagai SELESAI? Stok akan ditambahkan ke total terjual.')) {
+                db.ref('pesanan/' + id).once('value', snap => {
+                    const order = snap.val();
+                    const riwayatBaru = order.riwayatStatus || [];
+                    riwayatBaru.push({
+                        status: 'selesai',
+                        waktu: Date.now(),
+                        catatan: 'Pesanan selesai'
+                    });
+                    
+                    db.ref('pesanan/' + id).update({ 
+                        status: 'selesai',
+                        riwayatStatus: riwayatBaru
+                    }).then(() => {
+                        // Tambah jumlah terjual
+                        db.ref('produk/' + order.produkId + '/terjual').transaction(current => (current || 0) + order.jumlah);
+                        
+                        showToast('✅ Pesanan selesai');
+                        
+                        // Kirim notifikasi WA ke pembeli
+                        const pesanWA = `✅ *PESANAN SELESAI!*\n\n` +
+                            `Halo ${order.nama},\n` +
+                            `Pesanan *${order.kode}* telah selesai.\n\n` +
+                            `Terima kasih telah berbelanja di Jamu Herbal Alami 🌿\n` +
+                            `Jangan lupa kasih ulasan ya!`;
+                        
+                        window.open(`https://wa.me/${order.wa.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(pesanWA)}`, '_blank');
+                    });
+                });
+            }
+        }
+
+        // ========== LIHAT RIWAYAT STATUS ==========
+        function lihatRiwayat(id) {
+            db.ref('pesanan/' + id).once('value', snap => {
+                const order = snap.val();
+                let riwayatHtml = '';
+                
+                if(order.riwayatStatus && order.riwayatStatus.length > 0) {
+                    order.riwayatStatus.forEach(r => {
+                        const statusText = {
+                            'pending': '⏳ Pending',
+                            'menunggu-pembayaran': '💰 Menunggu Pembayaran',
+                            'proses': '⚙️ Diproses',
+                            'dikirim': '📦 Dikirim',
+                            'selesai': '✅ Selesai',
+                            'ditolak': '❌ Ditolak'
+                        }[r.status] || r.status;
+                        
+                        riwayatHtml += `
+                            <div class="border-l-2 border-green-500 pl-3 py-2">
+                                <p class="text-sm font-semibold">${statusText}</p>
+                                <p class="text-xs text-gray-600">${r.catatan || ''}</p>
+                                <p class="text-xs text-gray-400">${new Date(r.waktu).toLocaleString('id-ID')}</p>
+                            </div>
+                        `;
+                    });
+                } else {
+                    riwayatHtml = '<p class="text-gray-500">Belum ada riwayat</p>';
+                }
+                
+                // Tampilkan dalam modal sederhana
+                alert('Riwayat Pesanan:\n\n' + riwayatHtml.replace(/<[^>]*>/g, '\n'));
+            });
+        }
+
+        // ========== EXPORT LAPORAN ==========
+        function exportLaporan() {
+            db.ref('pesanan').once('value', snap => {
+                const orders = snap.val();
+                if(!orders) {
+                    showToast('Tidak ada data untuk diexport', 'error');
+                    return;
+                }
+                
+                let csv = 'Kode,Nama,Produk,Jumlah,Total,Status,Waktu\n';
+                
+                Object.keys(orders).forEach(key => {
+                    const o = orders[key];
+                    csv += `"${o.kode}","${o.nama}","${o.produkNama}",${o.jumlah},${o.total},"${o.status}","${new Date(o.waktu).toLocaleString('id-ID')}"\n`;
+                });
+                
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'laporan-pesanan-' + new Date().toISOString().slice(0,10) + '.csv';
+                a.click();
+                
+                showToast('Laporan diexport');
+            });
+        }
+
         // ========== INIT ==========
         window.onload = function() {
             loadProduk();
@@ -1193,8 +1564,56 @@
                 document.getElementById('cekIdPesanan').value = orderId;
                 cekPesanan();
             }
+            
+            // Tambah tombol export di admin panel nanti
+            console.log('Jamu Herbal Alami - Siap digunakan!');
+        };
+
+        // ========== TAMBAHKAN BUTTON EXPORT DI ADMIN PANEL ==========
+        // Ini bakal dipanggil pas admin panel dibuka
+        function tambahTombolExport() {
+            const tabPesanan = document.getElementById('tabPesanan');
+            if(tabPesanan && !document.getElementById('exportBtn')) {
+                const exportBtn = document.createElement('button');
+                exportBtn.id = 'exportBtn';
+                exportBtn.className = 'bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 ml-auto';
+                exportBtn.innerHTML = '<i class="fas fa-download mr-2"></i>Export CSV';
+                exportBtn.onclick = exportLaporan;
+                
+                const filterDiv = tabPesanan.querySelector('.mb-4.flex');
+                if(filterDiv) {
+                    filterDiv.appendChild(exportBtn);
+                }
+            }
+        }
+
+        // Override bukaAdminPanel untuk tambah tombol export
+        const originalBukaAdminPanel = bukaAdminPanel;
+        bukaAdminPanel = function() {
+            originalBukaAdminPanel();
+            setTimeout(tambahTombolExport, 500);
         };
     </script>
 
+    <!-- TOMBOL CEPAT KONFIRMASI DI HALAMAN UTAMA (UNTUK ADMIN) -->
+    <div id="quickConfirmFloating" class="fixed bottom-6 left-24 hidden z-50 admin-button-appear">
+        <button onclick="bukaKonfirmasiModalFromAdmin()" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 hover:bg-blue-700">
+            <i class="fas fa-money-bill-wave"></i> Konfirmasi Bayar
+        </button>
+    </div>
+
+    <script>
+        // Tampilkan tombol quick confirm kalau admin panel aktif
+        document.getElementById('hiddenClickArea').addEventListener('click', function() {
+            clickCount++;
+            if(clickCount >= CLICKS_NEEDED) {
+                document.getElementById('hiddenAdminButton').classList.remove('hidden');
+                document.getElementById('quickConfirmFloating').classList.remove('hidden');
+                clickCount = 0;
+                showToast('🔓 Admin panel tersedia!', 'success');
+            }
+        });
+    </script>
+
 </body>
-</html>
+    </html>
