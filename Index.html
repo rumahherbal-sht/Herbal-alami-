@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jamu Herbal Alami</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Firebase Config - Langsung pake API key lu -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1xADf6KbttaSRl3bYuKEMUrQ4SJmTtH4",
+            authDomain: "jamu-herbal-alami.firebaseapp.com",
+            databaseURL: "https://jamu-herbal-alami-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "jamu-herbal-alami",
+            storageBucket: "jamu-herbal-alami.firebasestorage.app",
+            messagingSenderId: "770031966685",
+            appId: "1:770031966685:web:dc20683776e310c0b0fe34"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const storage = firebase.storage();
+    </script>
+
+    <!-- Navigation -->
+    <nav class="bg-green-600 text-white p-4 sticky top-0">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">🌿 Jamu Herbal</h1>
+            <div class="space-x-4">
+                <a href="#produk" class="hover:underline">Produk</a>
+                <a href="#testimoni" class="hover:underline">Testimoni</a>
+                <a href="#kontak" class="hover:underline">Kontak</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="bg-green-500 text-white py-16 text-center">
+        <h2 class="text-4xl font-bold mb-4">Herbal Alami Untuk Kesehatan</h2>
+        <p class="text-xl">100% Alami - Tradisional - Berkhasiat</p>
+    </section>
+
+    <!-- Produk -->
+    <section id="produk" class="container mx-auto p-4 py-8">
+        <h2 class="text-3xl font-bold text-center mb-8">Produk Kami</h2>
+        <div id="produkList" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Produk akan muncul disini via JavaScript -->
+        </div>
+    </section>
+
+    <!-- Testimoni -->
+    <section id="testimoni" class="bg-gray-100 py-8">
+        <div class="container mx-auto p-4">
+            <h2 class="text-3xl font-bold text-center mb-8">Testimoni Pembeli</h2>
+            <div id="testimoniList" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Testimoni akan muncul disini -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Kontak -->
+    <section id="kontak" class="container mx-auto p-4 py-8 text-center">
+        <h2 class="text-3xl font-bold mb-4">Hubungi Kami</h2>
+        <p class="text-2xl text-green-600 font-bold mb-4" id="nomorKontak">0821-2694-1909</p>
+        <a href="https://wa.me/6282126941909" class="bg-green-500 text-white px-6 py-3 rounded-lg inline-block">
+            <i class="fab fa-whatsapp mr-2"></i>Chat WhatsApp
+        </a>
+    </section>
+
+    <!-- Admin Panel Link (Hidden) - buka di URL/#admin123 -->
+    <script>
+        // Admin access via URL hash
+        const ADMIN_HASH = "rahasia123";
+        
+        if(window.location.hash === '#' + ADMIN_HASH) {
+            localStorage.setItem('admin', 'true');
+            window.location.hash = '';
+        }
+
+        if(localStorage.getItem('admin') === 'true') {
+            document.write(`
+                <div style="position:fixed; bottom:20px; right:20px; z-index:9999;">
+                    <button onclick="bukaAdminPanel()" class="bg-black text-white px-4 py-2 rounded-lg shadow-lg">
+                        ⚡ Admin Panel
+                    </button>
+                </div>
+            `);
+        }
+    </script>
+
+    <!-- Admin Panel Modal -->
+    <div id="adminModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[99999]">
+        <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto m-4">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">Admin Panel</h2>
+                    <button onclick="tutupAdminPanel()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+
+                <!-- Tab Menu -->
+                <div class="flex border-b mb-4">
+                    <button onclick="tabAdmin('produk')" class="px-4 py-2 text-green-600 border-b-2 border-green-600" id="tabProdukBtn">Produk</button>
+                    <button onclick="tabAdmin('testimoni')" class="px-4 py-2 text-gray-500" id="tabTestimoniBtn">Testimoni</button>
+                    <button onclick="tabAdmin('kontak')" class="px-4 py-2 text-gray-500" id="tabKontakBtn">Kontak</button>
+                </div>
+
+                <!-- Tab Produk -->
+                <div id="tabProduk" class="tab-content">
+                    <button onclick="tambahProduk()" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">
+                        <i class="fas fa-plus mr-2"></i>Tambah Produk
+                    </button>
+                    <div id="adminProdukList" class="space-y-2"></div>
+                </div>
+
+                <!-- Tab Testimoni -->
+                <div id="tabTestimoni" class="tab-content hidden">
+                    <div id="adminTestimoniList" class="space-y-2"></div>
+                </div>
+
+                <!-- Tab Kontak -->
+                <div id="tabKontak" class="tab-content hidden">
+                    <label class="block mb-2">Nomor WhatsApp/Telepon</label>
+                    <input type="text" id="editNomor" class="w-full border p-2 rounded-lg mb-4">
+                    <button onclick="simpanNomor()" class="bg-green-600 text-white px-4 py-2 rounded-lg">Simpan</button>
+                </div>
+
+                <div class="mt-4 pt-4 border-t">
+                    <button onclick="logoutAdmin()" class="bg-red-500 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== FUNGSI UTAMA ==========
+        
+        // Load Produk
+        function loadProduk() {
+            db.ref('produk').on('value', (snapshot) => {
+                const data = snapshot.val();
+                const list = document.getElementById('produkList');
+                const adminList = document.getElementById('adminProdukList');
+                
+                if(!data) {
+                    list.innerHTML = '<p class="text-center col-span-3">Belum ada produk</p>';
+                    return;
+                }
+
+                let produkHtml = '';
+                let adminHtml = '';
+
+                Object.keys(data).forEach(key => {
+                    const p = data[key];
+                    
+                    // Tampilan user
+                    produkHtml += `
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <img src="${p.foto || 'https://via.placeholder.com/300'}" class="w-full h-48 object-cover rounded mb-2">
+                            <h3 class="font-bold text-xl">${p.nama}</h3>
+                            <p class="text-gray-600">${p.deskripsi}</p>
+                            <p class="text-green-600 font-bold text-xl mt-2">Rp ${Number(p.harga).toLocaleString()}</p>
+                            <button onclick="beli('${key}')" class="w-full bg-green-600 text-white py-2 rounded mt-2 hover:bg-green-700">
+                                Beli
+                            </button>
+                        </div>
+                    `;
+
+                    // Tampilan admin
+                    adminHtml += `
+                        <div class="bg-gray-50 p-3 rounded flex justify-between items-center">
+                            <div>
+                                <p class="font-semibold">${p.nama}</p>
+                                <p class="text-sm text-gray-600">Rp ${Number(p.harga).toLocaleString()}</p>
+                            </div>
+                            <div>
+                                <button onclick="editProduk('${key}')" class="text-blue-500 mr-2">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="hapusProduk('${key}')" class="text-red-500">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                list.innerHTML = produkHtml;
+                if(adminList) adminList.innerHTML = adminHtml;
+            });
+        }
+
+        // Load Testimoni
+        function loadTestimoni() {
+            db.ref('testimoni').on('value', (snapshot) => {
+                const data = snapshot.val();
+                const list = document.getElementById('testimoniList');
+                const adminList = document.getElementById('adminTestimoniList');
+                
+                if(!data) {
+                    list.innerHTML = '<p class="text-center col-span-3">Belum ada testimoni</p>';
+                    return;
+                }
+
+                let testimoniHtml = '';
+                let adminHtml = '';
+
+                Object.keys(data).forEach(key => {
+                    const t = data[key];
+                    
+                    testimoniHtml += `
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <div class="flex items-center mb-2">
+                                <img src="${t.foto || 'https://via.placeholder.com/50'}" class="w-10 h-10 rounded-full object-cover mr-2">
+                                <div>
+                                    <p class="font-semibold">${t.nama}</p>
+                                    <div class="flex text-yellow-400">
+                                        ${Array(5).fill(0).map((_, i) => 
+                                            `<i class="fa-${i < t.rating ? 'solid' : 'regular'} fa-star"></i>`
+                                        ).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-gray-600">${t.ulasan}</p>
+                        </div>
+                    `;
+
+                    adminHtml += `
+                        <div class="bg-gray-50 p-3 rounded flex justify-between items-center">
+                            <div>
+                                <p class="font-semibold">${t.nama}</p>
+                                <p class="text-sm text-gray-600">${t.ulasan.substring(0,30)}...</p>
+                            </div>
+                            <button onclick="hapusTestimoni('${key}')" class="text-red-500">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+
+                list.innerHTML = testimoniHtml;
+                if(adminList) adminList.innerHTML = adminHtml;
+            });
+        }
+
+        // Load Nomor Kontak
+        function loadNomor() {
+            db.ref('kontak/nomor').on('value', (snapshot) => {
+                const nomor = snapshot.val() || '0821-2694-1909';
+                document.getElementById('nomorKontak').textContent = nomor;
+                document.getElementById('editNomor').value = nomor;
+            });
+        }
+
+        // ========== FUNGSI PEMBELIAN ==========
+        
+        function beli(id) {
+            let nama = prompt("Nama lengkap:");
+            if(!nama) return;
+            
+            let alamat = prompt("Alamat lengkap:");
+            if(!alamat) return;
+            
+            let wa = prompt("Nomor WhatsApp:");
+            if(!wa) return;
+
+            // Ambil data produk
+            db.ref('produk/' + id).once('value', (snapshot) => {
+                const produk = snapshot.val();
+                
+                const pesanan = {
+                    nama: nama,
+                    alamat: alamat,
+                    wa: wa,
+                    produk: produk.nama,
+                    harga: produk.harga,
+                    status: 'pending',
+                    waktu: Date.now()
+                };
+
+                db.ref('pesanan').push(pesanan).then(() => {
+                    alert("Pesanan berhasil! Terima kasih.");
+                    
+                    // Tanya mau kasih testimoni?
+                    if(confirm("Mau kasih testimoni?")) {
+                        kasihTestimoni(nama, id);
+                    }
+                });
+            });
+        }
+
+        function kasihTestimoni(nama, produkId) {
+            let rating = prompt("Kasih rating 1-5:", "5");
+            if(!rating) return;
+            
+            let ulasan = prompt("Tulis ulasan kamu:");
+            if(!ulasan) return;
+
+            // Upload foto (opsional)
+            let fotoInput = document.createElement('input');
+            fotoInput.type = 'file';
+            fotoInput.accept = 'image/*';
+            
+            fotoInput.onchange = function(e) {
+                let file = e.target.files[0];
+                if(file) {
+                    let storageRef = storage.ref('testimoni/' + Date.now() + '_' + file.name);
+                    storageRef.put(file).then(() => {
+                        storageRef.getDownloadURL().then(url => {
+                            simpanTestimoni(nama, rating, ulasan, url);
+                        });
+                    });
+                } else {
+                    simpanTestimoni(nama, rating, ulasan, null);
+                }
+            };
+            
+            fotoInput.click();
+        }
+
+        function simpanTestimoni(nama, rating, ulasan, fotoUrl) {
+            db.ref('testimoni').push({
+                nama: nama,
+                rating: parseInt(rating),
+                ulasan: ulasan,
+                foto: fotoUrl,
+                waktu: Date.now()
+            }).then(() => {
+                alert("Terima kasih atas testimoni nya!");
+            });
+        }
+
+        // ========== FUNGSI ADMIN ==========
+        
+        function bukaAdminPanel() {
+            document.getElementById('adminModal').style.display = 'flex';
+        }
+
+        function tutupAdminPanel() {
+            document.getElementById('adminModal').style.display = 'none';
+        }
+
+        function tabAdmin(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hidden');
+            
+            document.querySelectorAll('#adminModal button.border-b-2').forEach(btn => {
+                btn.classList.remove('border-b-2', 'border-green-600', 'text-green-600');
+                btn.classList.add('text-gray-500');
+            });
+            
+            document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1) + 'Btn').classList.add('border-b-2', 'border-green-600', 'text-green-600');
+        }
+
+        function tambahProduk() {
+            let nama = prompt("Nama produk:");
+            if(!nama) return;
+            
+            let harga = prompt("Harga produk (angka saja):");
+            if(!harga) return;
+            
+            let deskripsi = prompt("Deskripsi produk:");
+            if(!deskripsi) return;
+            
+            let foto = prompt("URL foto produk (opsional):");
+
+            db.ref('produk').push({
+                nama: nama,
+                harga: parseInt(harga),
+                deskripsi: deskripsi,
+                foto: foto || 'https://via.placeholder.com/300'
+            }).then(() => alert("Produk ditambahkan!"));
+        }
+
+        function editProduk(id) {
+            db.ref('produk/' + id).once('value', (snapshot) => {
+                let p = snapshot.val();
+                
+                let nama = prompt("Nama produk:", p.nama);
+                if(nama) p.nama = nama;
+                
+                let harga = prompt("Harga produk:", p.harga);
+                if(harga) p.harga = parseInt(harga);
+                
+                let deskripsi = prompt("Deskripsi:", p.deskripsi);
+                if(deskripsi) p.deskripsi = deskripsi;
+                
+                let foto = prompt("URL foto:", p.foto);
+                if(foto) p.foto = foto;
+
+                db.ref('produk/' + id).update(p);
+            });
+        }
+
+        function hapusProduk(id) {
+            if(confirm("Yakin hapus produk?")) {
+                db.ref('produk/' + id).remove();
+            }
+        }
+
+        function hapusTestimoni(id) {
+            if(confirm("Yakin hapus testimoni?")) {
+                db.ref('testimoni/' + id).remove();
+            }
+        }
+
+        function simpanNomor() {
+            let nomor = document.getElementById('editNomor').value;
+            db.ref('kontak/nomor').set(nomor).then(() => {
+                alert("Nomor berhasil disimpan!");
+            });
+        }
+
+        function logoutAdmin() {
+            localStorage.removeItem('admin');
+            tutupAdminPanel();
+            location.reload();
+        }
+
+        // ========== INIT ==========
+        loadProduk();
+        loadTestimoni();
+        loadNomor();
+    </script>
+</body>
+  </html>
