@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jamu Herbal Alami</title>
+    <title>Jamu Herbal Alami - Official Store</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
@@ -12,9 +12,33 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <style>
+        .hidden-click-area { cursor: pointer; }
+        .admin-button-appear { animation: slideIn 0.5s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .product-card { transition: all 0.3s; }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+        .whatsapp-float {
+            position: fixed; bottom: 20px; left: 20px; background: #25D366; color: white;
+            width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 50;
+            cursor: pointer; transition: all 0.3s; font-size: 30px;
+        }
+        .whatsapp-float:hover { transform: scale(1.1); background: #128C7E; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; border-radius: 12px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; margin: 20px; padding: 24px; }
+        .loading { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: #09f; animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .toast {
+            position: fixed; bottom: 20px; right: 20px; background: #333; color: white;
+            padding: 12px 24px; border-radius: 8px; z-index: 2000; animation: slideInRight 0.3s;
+        }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
 </head>
 <body class="bg-gray-50">
-    <!-- Firebase Config - Langsung pake API key lu -->
+
+    <!-- FIREBASE CONFIG -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyD1xADf6KbttaSRl3bYuKEMUrQ4SJmTtH4",
@@ -25,414 +49,304 @@
             messagingSenderId: "770031966685",
             appId: "1:770031966685:web:dc20683776e310c0b0fe34"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const storage = firebase.storage();
+        const OWNER_WA = "6285187980564";
+        
+        // Anti spam: tracking IP via session
+        let userSession = localStorage.getItem('sessionId') || 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2);
+        localStorage.setItem('sessionId', userSession);
     </script>
 
-    <!-- Navigation -->
-    <nav class="bg-green-600 text-white p-4 sticky top-0">
+    <!-- WHATSAPP FLOAT -->
+    <a href="https://wa.me/6285187980564" class="whatsapp-float" target="_blank">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <!-- NAVBAR -->
+    <nav class="bg-green-600 text-white p-4 sticky top-0 z-40 shadow-lg">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold">🌿 Jamu Herbal</h1>
-            <div class="space-x-4">
-                <a href="#produk" class="hover:underline">Produk</a>
-                <a href="#testimoni" class="hover:underline">Testimoni</a>
-                <a href="#kontak" class="hover:underline">Kontak</a>
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i class="fas fa-leaf"></i> Jamu Herbal Alami
+            </h1>
+            <div class="hidden md:flex space-x-6">
+                <a href="#produk" class="hover:text-green-200">Produk</a>
+                <a href="#testimoni" class="hover:text-green-200">Testimoni</a>
+                <a href="#kontak" class="hover:text-green-200">Kontak</a>
             </div>
+            <span id="totalTerjual" class="bg-yellow-500 text-black px-3 py-1 rounded-full text-sm font-bold">
+                <i class="fas fa-chart-line mr-1"></i>0 Terjual
+            </span>
         </div>
     </nav>
 
-    <!-- Hero -->
-    <section class="bg-green-500 text-white py-16 text-center">
-        <h2 class="text-4xl font-bold mb-4">Herbal Alami Untuk Kesehatan</h2>
-        <p class="text-xl">100% Alami - Tradisional - Berkhasiat</p>
+    <!-- HERO + HIDDEN CLICK AREA -->
+    <section class="bg-gradient-to-r from-green-500 to-green-700 text-white py-16 text-center relative">
+        <div class="container mx-auto">
+            <h2 class="text-4xl font-bold mb-4">Herbal Alami Untuk Kesehatan</h2>
+            <p class="text-xl">100% Alami - Tradisional - Berkhasiat</p>
+            <p class="mt-4 text-sm opacity-75">📦 Gratis Ongkir • 💳 Bayar di Tempat • 🌿 Terpercaya</p>
+        </div>
+        <!-- KLIK 5x DISINI (POJOK KANAN BAWAH) -->
+        <div class="hidden-click-area absolute bottom-4 right-4 w-20 h-20 opacity-0 hover:opacity-20 bg-black rounded-full" id="hiddenClickArea"></div>
     </section>
 
-    <!-- Produk -->
-    <section id="produk" class="container mx-auto p-4 py-8">
-        <h2 class="text-3xl font-bold text-center mb-8">Produk Kami</h2>
-        <div id="produkList" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Produk akan muncul disini via JavaScript -->
+    <!-- PRODUK SECTION -->
+    <section id="produk" class="container mx-auto px-4 py-12">
+        <h2 class="text-3xl font-bold text-center mb-4">🌿 Produk Kami</h2>
+        <p class="text-center text-gray-600 mb-8">Herbal pilihan untuk kesehatan keluarga</p>
+        <div id="produkList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+    </section>
+
+    <!-- TESTIMONI SECTION -->
+    <section id="testimoni" class="bg-gray-100 py-12">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-4">⭐ Testimoni Pembeli</h2>
+            <p class="text-center text-gray-600 mb-8">Apa kata mereka yang sudah merasakan khasiatnya</p>
+            <div id="testimoniList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </div>
     </section>
 
-    <!-- Testimoni -->
-    <section id="testimoni" class="bg-gray-100 py-8">
-        <div class="container mx-auto p-4">
-            <h2 class="text-3xl font-bold text-center mb-8">Testimoni Pembeli</h2>
-            <div id="testimoniList" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Testimoni akan muncul disini -->
-            </div>
-        </div>
-    </section>
-
-    <!-- Kontak -->
-    <section id="kontak" class="container mx-auto p-4 py-8 text-center">
-        <h2 class="text-3xl font-bold mb-4">Hubungi Kami</h2>
-        <p class="text-2xl text-green-600 font-bold mb-4" id="nomorKontak">0821-2694-1909</p>
-        <a href="https://wa.me/6282126941909" class="bg-green-500 text-white px-6 py-3 rounded-lg inline-block">
+    <!-- KONTAK SECTION -->
+    <section id="kontak" class="container mx-auto px-4 py-12 text-center">
+        <h2 class="text-3xl font-bold mb-4">📞 Hubungi Kami</h2>
+        <p class="text-gray-600 mb-6">Senin - Sabtu (08.00 - 20.00 WIB)</p>
+        <p class="text-3xl text-green-600 font-bold mb-4" id="nomorKontak">0851-8798-0564</p>
+        <a href="https://wa.me/6285187980564" class="bg-green-500 text-white px-8 py-3 rounded-lg inline-block hover:bg-green-600 transition text-lg font-semibold" target="_blank">
             <i class="fab fa-whatsapp mr-2"></i>Chat WhatsApp
         </a>
+        <div class="mt-4">
+            <button onclick="bukaCekPesananModal()" class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition">
+                <i class="fas fa-search mr-2"></i>Cek Status Pesanan
+            </button>
+        </div>
     </section>
 
-    <!-- Admin Panel Link (Hidden) - buka di URL/#admin123 -->
-    <script>
-        // Admin access via URL hash
-        const ADMIN_HASH = "rahasia123";
-        
-        if(window.location.hash === '#' + ADMIN_HASH) {
-            localStorage.setItem('admin', 'true');
-            window.location.hash = '';
-        }
-
-        if(localStorage.getItem('admin') === 'true') {
-            document.write(`
-                <div style="position:fixed; bottom:20px; right:20px; z-index:9999;">
-                    <button onclick="bukaAdminPanel()" class="bg-black text-white px-4 py-2 rounded-lg shadow-lg">
-                        ⚡ Admin Panel
+    <!-- MODAL ORDER (ISI DETAIL) -->
+    <div id="orderModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">📋 Detail Pemesanan</h3>
+                <button onclick="tutupOrderModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div id="orderProductInfo" class="mb-4 p-3 bg-green-50 rounded-lg"></div>
+            <form id="orderForm" onsubmit="submitOrder(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Nama Lengkap <span class="text-red-500">*</span></label>
+                    <input type="text" id="orderNama" required class="w-full border rounded-lg p-2" placeholder="Masukkan nama lengkap">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Nomor WhatsApp <span class="text-red-500">*</span></label>
+                    <input type="tel" id="orderWA" required class="w-full border rounded-lg p-2" placeholder="08123456789">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Alamat Lengkap <span class="text-red-500">*</span></label>
+                    <textarea id="orderAlamat" required rows="3" class="w-full border rounded-lg p-2" placeholder="Masukkan alamat lengkap"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Jumlah <span class="text-red-500">*</span></label>
+                    <input type="number" id="orderQty" min="1" value="1" required class="w-full border rounded-lg p-2">
+                </div>
+                <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                    <p class="font-semibold">Total: <span id="orderTotal" class="text-green-600">Rp 0</span></p>
+                </div>
+                
+                <!-- Anti spam: hidden field -->
+                <input type="hidden" id="orderSession" value="">
+                <input type="hidden" id="orderProdukId">
+                <input type="hidden" id="orderProdukHarga">
+                
+                <div class="flex gap-2">
+                    <button type="button" onclick="tutupOrderModal()" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400">Batal</button>
+                    <button type="submit" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 font-semibold">
+                        <i class="fab fa-whatsapp mr-1"></i>Konfirmasi Order
                     </button>
                 </div>
-            `);
-        }
-    </script>
+            </form>
+        </div>
+    </div>
 
-    <!-- Admin Panel Modal -->
-    <div id="adminModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[99999]">
-        <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto m-4">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold">Admin Panel</h2>
-                    <button onclick="tutupAdminPanel()" class="text-gray-500 hover:text-gray-700">
-                        <i class="fas fa-times text-2xl"></i>
-                    </button>
-                </div>
+    <!-- MODAL CEK PESANAN -->
+    <div id="cekPesananModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">🔍 Cek Status Pesanan</h3>
+                <button onclick="tutupCekPesananModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Masukkan ID Pesanan</label>
+                <input type="text" id="cekIdPesanan" class="w-full border rounded-lg p-2" placeholder="Contoh: INV-12345678">
+            </div>
+            <button onclick="cekPesanan()" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 font-semibold">
+                <i class="fas fa-search mr-1"></i>Cek Sekarang
+            </button>
+            <div id="cekPesananResult" class="mt-4 p-3 rounded-lg hidden"></div>
+        </div>
+    </div>
 
-                <!-- Tab Menu -->
-                <div class="flex border-b mb-4">
-                    <button onclick="tabAdmin('produk')" class="px-4 py-2 text-green-600 border-b-2 border-green-600" id="tabProdukBtn">Produk</button>
-                    <button onclick="tabAdmin('testimoni')" class="px-4 py-2 text-gray-500" id="tabTestimoniBtn">Testimoni</button>
-                    <button onclick="tabAdmin('kontak')" class="px-4 py-2 text-gray-500" id="tabKontakBtn">Kontak</button>
+    <!-- MODAL REVIEW (KASIH ULASAN) -->
+    <div id="reviewModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">⭐ Kasih Ulasan</h3>
+                <button onclick="tutupReviewModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div id="reviewProductInfo" class="mb-4 p-3 bg-gray-50 rounded-lg"></div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Rating</label>
+                <div class="flex space-x-2 text-3xl" id="ratingStars">
+                    <i class="fa-regular fa-star cursor-pointer hover:text-yellow-400" data-rating="1"></i>
+                    <i class="fa-regular fa-star cursor-pointer hover:text-yellow-400" data-rating="2"></i>
+                    <i class="fa-regular fa-star cursor-pointer hover:text-yellow-400" data-rating="3"></i>
+                    <i class="fa-regular fa-star cursor-pointer hover:text-yellow-400" data-rating="4"></i>
+                    <i class="fa-regular fa-star cursor-pointer hover:text-yellow-400" data-rating="5"></i>
                 </div>
+                <input type="hidden" id="reviewRating" value="0">
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Ulasan</label>
+                <textarea id="reviewText" rows="4" class="w-full border rounded-lg p-2" placeholder="Tulis pengalaman kamu..."></textarea>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Foto (opsional)</label>
+                <input type="file" id="reviewPhoto" accept="image/*" class="w-full">
+            </div>
+            <input type="hidden" id="reviewOrderId">
+            <input type="hidden" id="reviewProductId">
+            <input type="hidden" id="reviewProductName">
+            <button onclick="submitReview()" class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-semibold">Kirim Ulasan</button>
+        </div>
+    </div>
 
-                <!-- Tab Produk -->
-                <div id="tabProduk" class="tab-content">
-                    <button onclick="tambahProduk()" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">
-                        <i class="fas fa-plus mr-2"></i>Tambah Produk
-                    </button>
-                    <div id="adminProdukList" class="space-y-2"></div>
-                </div>
+    <!-- ADMIN LOGIN MODAL -->
+    <div id="adminLoginModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">🔐 Admin Login</h3>
+                <button onclick="tutupLoginModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Password Admin</label>
+                <input type="password" id="adminPassword" class="w-full border rounded-lg p-2" placeholder="••••••••">
+            </div>
+            <button onclick="cekPassword()" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Login</button>
+            <p id="passwordError" class="text-red-500 text-sm mt-2 hidden">❌ Password salah!</p>
+        </div>
+    </div>
 
-                <!-- Tab Testimoni -->
-                <div id="tabTestimoni" class="tab-content hidden">
-                    <div id="adminTestimoniList" class="space-y-2"></div>
+    <!-- ADMIN PANEL MODAL -->
+    <div id="adminPanelModal" class="modal" style="align-items: flex-start;">
+        <div class="modal-content max-w-4xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">⚙️ Admin Panel</h2>
+                <button onclick="tutupAdminPanel()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            
+            <!-- STATS -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-blue-50 p-4 rounded-lg text-center"><p class="text-2xl font-bold text-blue-600" id="statProduk">0</p><p class="text-sm">Produk</p></div>
+                <div class="bg-green-50 p-4 rounded-lg text-center"><p class="text-2xl font-bold text-green-600" id="statPesanan">0</p><p class="text-sm">Pesanan</p></div>
+                <div class="bg-yellow-50 p-4 rounded-lg text-center"><p class="text-2xl font-bold text-yellow-600" id="statTerjual">0</p><p class="text-sm">Terjual</p></div>
+                <div class="bg-purple-50 p-4 rounded-lg text-center"><p class="text-2xl font-bold text-purple-600" id="statTestimoni">0</p><p class="text-sm">Testimoni</p></div>
+            </div>
+            
+            <!-- TABS -->
+            <div class="flex flex-wrap border-b mb-4 gap-2">
+                <button onclick="switchTab('produk')" class="tab-btn px-4 py-2 text-green-600 border-b-2 border-green-600" data-tab="produk"><i class="fas fa-box mr-1"></i>Produk</button>
+                <button onclick="switchTab('pesanan')" class="tab-btn px-4 py-2 text-gray-500" data-tab="pesanan"><i class="fas fa-shopping-cart mr-1"></i>Pesanan</button>
+                <button onclick="switchTab('testimoni')" class="tab-btn px-4 py-2 text-gray-500" data-tab="testimoni"><i class="fas fa-star mr-1"></i>Testimoni</button>
+                <button onclick="switchTab('kontak')" class="tab-btn px-4 py-2 text-gray-500" data-tab="kontak"><i class="fas fa-phone mr-1"></i>Kontak</button>
+            </div>
+            
+            <!-- TAB PRODUK -->
+            <div id="tabProduk" class="tab-content">
+                <button onclick="tambahProduk()" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4"><i class="fas fa-plus mr-2"></i>Tambah Produk</button>
+                <div id="adminProdukList" class="space-y-2 max-h-60 overflow-y-auto"></div>
+            </div>
+            
+            <!-- TAB PESANAN -->
+            <div id="tabPesanan" class="tab-content hidden">
+                <div class="mb-4 flex gap-2">
+                    <select id="filterStatus" class="border rounded-lg p-2" onchange="filterPesanan()">
+                        <option value="all">Semua Status</option>
+                        <option value="pending">⏳ Pending</option>
+                        <option value="proses">⚙️ Diproses</option>
+                        <option value="dikirim">📦 Dikirim</option>
+                        <option value="selesai">✅ Selesai</option>
+                        <option value="ditolak">❌ Ditolak</option>
+                    </select>
                 </div>
-
-                <!-- Tab Kontak -->
-                <div id="tabKontak" class="tab-content hidden">
-                    <label class="block mb-2">Nomor WhatsApp/Telepon</label>
-                    <input type="text" id="editNomor" class="w-full border p-2 rounded-lg mb-4">
-                    <button onclick="simpanNomor()" class="bg-green-600 text-white px-4 py-2 rounded-lg">Simpan</button>
-                </div>
-
-                <div class="mt-4 pt-4 border-t">
-                    <button onclick="logoutAdmin()" class="bg-red-500 text-white px-4 py-2 rounded-lg">
-                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                    </button>
-                </div>
+                <div id="adminPesananList" class="space-y-3 max-h-96 overflow-y-auto"></div>
+            </div>
+            
+            <!-- TAB TESTIMONI -->
+            <div id="tabTestimoni" class="tab-content hidden">
+                <div id="adminTestimoniList" class="space-y-2 max-h-96 overflow-y-auto"></div>
+            </div>
+            
+            <!-- TAB KONTAK -->
+            <div id="tabKontak" class="tab-content hidden">
+                <label class="block mb-2 font-semibold">Nomor WhatsApp</label>
+                <input type="text" id="editNomor" class="w-full border p-2 rounded-lg mb-4" value="0851-8798-0564">
+                <button onclick="simpanPengaturan()" class="bg-green-600 text-white px-4 py-2 rounded-lg"><i class="fas fa-save mr-2"></i>Simpan</button>
+            </div>
+            
+            <!-- LOGOUT -->
+            <div class="mt-4 pt-4 border-t">
+                <button onclick="logoutAdmin()" class="bg-red-500 text-white px-4 py-2 rounded-lg"><i class="fas fa-sign-out-alt mr-2"></i>Logout</button>
             </div>
         </div>
     </div>
 
+    <!-- HIDDEN ADMIN BUTTON -->
+    <div id="hiddenAdminButton" class="fixed bottom-6 right-6 hidden z-50 admin-button-appear">
+        <button onclick="bukaLoginModal()" class="bg-black text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 hover:bg-gray-800">
+            <i class="fas fa-lock"></i> Admin Panel
+        </button>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-800 text-white py-8 mt-8">
+        <div class="container mx-auto text-center">
+            <p>&copy; 2024 Jamu Herbal Alami</p>
+            <p class="text-sm text-gray-400 mt-2">🌿 100% Alami dan Tradisional 🌿</p>
+        </div>
+    </footer>
+
     <script>
-        // ========== FUNGSI UTAMA ==========
-        
-        // Load Produk
-        function loadProduk() {
-            db.ref('produk').on('value', (snapshot) => {
-                const data = snapshot.val();
-                const list = document.getElementById('produkList');
-                const adminList = document.getElementById('adminProdukList');
-                
-                if(!data) {
-                    list.innerHTML = '<p class="text-center col-span-3">Belum ada produk</p>';
-                    return;
-                }
+        // ========== KONFIGURASI ==========
+        const ADMIN_PASSWORD = "jamu123";
+        let clickCount = 0;
+        const CLICKS_NEEDED = 5;
+        let currentRating = 0;
+        let currentProductForOrder = null;
 
-                let produkHtml = '';
-                let adminHtml = '';
-
-                Object.keys(data).forEach(key => {
-                    const p = data[key];
-                    
-                    // Tampilan user
-                    produkHtml += `
-                        <div class="bg-white rounded-lg shadow p-4">
-                            <img src="${p.foto || 'https://via.placeholder.com/300'}" class="w-full h-48 object-cover rounded mb-2">
-                            <h3 class="font-bold text-xl">${p.nama}</h3>
-                            <p class="text-gray-600">${p.deskripsi}</p>
-                            <p class="text-green-600 font-bold text-xl mt-2">Rp ${Number(p.harga).toLocaleString()}</p>
-                            <button onclick="beli('${key}')" class="w-full bg-green-600 text-white py-2 rounded mt-2 hover:bg-green-700">
-                                Beli
-                            </button>
-                        </div>
-                    `;
-
-                    // Tampilan admin
-                    adminHtml += `
-                        <div class="bg-gray-50 p-3 rounded flex justify-between items-center">
-                            <div>
-                                <p class="font-semibold">${p.nama}</p>
-                                <p class="text-sm text-gray-600">Rp ${Number(p.harga).toLocaleString()}</p>
-                            </div>
-                            <div>
-                                <button onclick="editProduk('${key}')" class="text-blue-500 mr-2">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button onclick="hapusProduk('${key}')" class="text-red-500">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                list.innerHTML = produkHtml;
-                if(adminList) adminList.innerHTML = adminHtml;
-            });
+        // ========== UTILITY ==========
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
         }
 
-        // Load Testimoni
-        function loadTestimoni() {
-            db.ref('testimoni').on('value', (snapshot) => {
-                const data = snapshot.val();
-                const list = document.getElementById('testimoniList');
-                const adminList = document.getElementById('adminTestimoniList');
-                
-                if(!data) {
-                    list.innerHTML = '<p class="text-center col-span-3">Belum ada testimoni</p>';
-                    return;
-                }
-
-                let testimoniHtml = '';
-                let adminHtml = '';
-
-                Object.keys(data).forEach(key => {
-                    const t = data[key];
-                    
-                    testimoniHtml += `
-                        <div class="bg-white rounded-lg shadow p-4">
-                            <div class="flex items-center mb-2">
-                                <img src="${t.foto || 'https://via.placeholder.com/50'}" class="w-10 h-10 rounded-full object-cover mr-2">
-                                <div>
-                                    <p class="font-semibold">${t.nama}</p>
-                                    <div class="flex text-yellow-400">
-                                        ${Array(5).fill(0).map((_, i) => 
-                                            `<i class="fa-${i < t.rating ? 'solid' : 'regular'} fa-star"></i>`
-                                        ).join('')}
-                                    </div>
-                                </div>
-                            </div>
-                            <p class="text-gray-600">${t.ulasan}</p>
-                        </div>
-                    `;
-
-                    adminHtml += `
-                        <div class="bg-gray-50 p-3 rounded flex justify-between items-center">
-                            <div>
-                                <p class="font-semibold">${t.nama}</p>
-                                <p class="text-sm text-gray-600">${t.ulasan.substring(0,30)}...</p>
-                            </div>
-                            <button onclick="hapusTestimoni('${key}')" class="text-red-500">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    `;
-                });
-
-                list.innerHTML = testimoniHtml;
-                if(adminList) adminList.innerHTML = adminHtml;
-            });
-        }
-
-        // Load Nomor Kontak
-        function loadNomor() {
-            db.ref('kontak/nomor').on('value', (snapshot) => {
-                const nomor = snapshot.val() || '0821-2694-1909';
-                document.getElementById('nomorKontak').textContent = nomor;
-                document.getElementById('editNomor').value = nomor;
-            });
-        }
-
-        // ========== FUNGSI PEMBELIAN ==========
-        
-        function beli(id) {
-            let nama = prompt("Nama lengkap:");
-            if(!nama) return;
-            
-            let alamat = prompt("Alamat lengkap:");
-            if(!alamat) return;
-            
-            let wa = prompt("Nomor WhatsApp:");
-            if(!wa) return;
-
-            // Ambil data produk
-            db.ref('produk/' + id).once('value', (snapshot) => {
-                const produk = snapshot.val();
-                
-                const pesanan = {
-                    nama: nama,
-                    alamat: alamat,
-                    wa: wa,
-                    produk: produk.nama,
-                    harga: produk.harga,
-                    status: 'pending',
-                    waktu: Date.now()
-                };
-
-                db.ref('pesanan').push(pesanan).then(() => {
-                    alert("Pesanan berhasil! Terima kasih.");
-                    
-                    // Tanya mau kasih testimoni?
-                    if(confirm("Mau kasih testimoni?")) {
-                        kasihTestimoni(nama, id);
-                    }
-                });
-            });
-        }
-
-        function kasihTestimoni(nama, produkId) {
-            let rating = prompt("Kasih rating 1-5:", "5");
-            if(!rating) return;
-            
-            let ulasan = prompt("Tulis ulasan kamu:");
-            if(!ulasan) return;
-
-            // Upload foto (opsional)
-            let fotoInput = document.createElement('input');
-            fotoInput.type = 'file';
-            fotoInput.accept = 'image/*';
-            
-            fotoInput.onchange = function(e) {
-                let file = e.target.files[0];
-                if(file) {
-                    let storageRef = storage.ref('testimoni/' + Date.now() + '_' + file.name);
-                    storageRef.put(file).then(() => {
-                        storageRef.getDownloadURL().then(url => {
-                            simpanTestimoni(nama, rating, ulasan, url);
-                        });
-                    });
-                } else {
-                    simpanTestimoni(nama, rating, ulasan, null);
-                }
-            };
-            
-            fotoInput.click();
-        }
-
-        function simpanTestimoni(nama, rating, ulasan, fotoUrl) {
-            db.ref('testimoni').push({
-                nama: nama,
-                rating: parseInt(rating),
-                ulasan: ulasan,
-                foto: fotoUrl,
-                waktu: Date.now()
-            }).then(() => {
-                alert("Terima kasih atas testimoni nya!");
-            });
-        }
-
-        // ========== FUNGSI ADMIN ==========
-        
-        function bukaAdminPanel() {
-            document.getElementById('adminModal').style.display = 'flex';
-        }
-
-        function tutupAdminPanel() {
-            document.getElementById('adminModal').style.display = 'none';
-        }
-
-        function tabAdmin(tab) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hidden');
-            
-            document.querySelectorAll('#adminModal button.border-b-2').forEach(btn => {
-                btn.classList.remove('border-b-2', 'border-green-600', 'text-green-600');
-                btn.classList.add('text-gray-500');
-            });
-            
-            document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1) + 'Btn').classList.add('border-b-2', 'border-green-600', 'text-green-600');
-        }
-
-        function tambahProduk() {
-            let nama = prompt("Nama produk:");
-            if(!nama) return;
-            
-            let harga = prompt("Harga produk (angka saja):");
-            if(!harga) return;
-            
-            let deskripsi = prompt("Deskripsi produk:");
-            if(!deskripsi) return;
-            
-            let foto = prompt("URL foto produk (opsional):");
-
-            db.ref('produk').push({
-                nama: nama,
-                harga: parseInt(harga),
-                deskripsi: deskripsi,
-                foto: foto || 'https://via.placeholder.com/300'
-            }).then(() => alert("Produk ditambahkan!"));
-        }
-
-        function editProduk(id) {
-            db.ref('produk/' + id).once('value', (snapshot) => {
-                let p = snapshot.val();
-                
-                let nama = prompt("Nama produk:", p.nama);
-                if(nama) p.nama = nama;
-                
-                let harga = prompt("Harga produk:", p.harga);
-                if(harga) p.harga = parseInt(harga);
-                
-                let deskripsi = prompt("Deskripsi:", p.deskripsi);
-                if(deskripsi) p.deskripsi = deskripsi;
-                
-                let foto = prompt("URL foto:", p.foto);
-                if(foto) p.foto = foto;
-
-                db.ref('produk/' + id).update(p);
-            });
-        }
-
-        function hapusProduk(id) {
-            if(confirm("Yakin hapus produk?")) {
-                db.ref('produk/' + id).remove();
+        // ========== HIDDEN CLICK ==========
+        document.getElementById('hiddenClickArea').addEventListener('click', function() {
+            clickCount++;
+            if(clickCount >= CLICKS_NEEDED) {
+                document.getElementById('hiddenAdminButton').classList.remove('hidden');
+                clickCount = 0;
+                showToast('🔓 Admin panel tersedia!', 'success');
             }
-        }
+        });
 
-        function hapusTestimoni(id) {
-            if(confirm("Yakin hapus testimoni?")) {
-                db.ref('testimoni/' + id).remove();
-            }
-        }
-
-        function simpanNomor() {
-            let nomor = document.getElementById('editNomor').value;
-            db.ref('kontak/nomor').set(nomor).then(() => {
-                alert("Nomor berhasil disimpan!");
-            });
-        }
-
-        function logoutAdmin() {
-            localStorage.removeItem('admin');
-            tutupAdminPanel();
-            location.reload();
-        }
-
-        // ========== INIT ==========
-        loadProduk();
-        loadTestimoni();
-        loadNomor();
-    </script>
-</body>
-  </html>
+        // ========== MODAL FUNCTIONS ==========
+        function bukaOrderModal(produkId) {
+            db.ref('produk/' + produkId).once('value', (snapshot) => {
+                const p = snapshot.val();
+                currentProductForOrder = { id: produkId, ...p };
+                document.getElementById('orderProductInfo').i
